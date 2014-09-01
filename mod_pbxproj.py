@@ -1250,6 +1250,7 @@ class XcodeProject(PBXDict):
                         ('PBXFrameworksBuildPhase', True),
                         ('PBXGroup', True),
                         ('PBXAggregateTarget', True),
+                        ('PBXHeadersBuildPhase', True),
                         ('PBXNativeTarget', True),
                         ('PBXProject', True),
                         ('PBXResourcesBuildPhase', True),

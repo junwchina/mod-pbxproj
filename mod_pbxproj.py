@@ -377,12 +377,12 @@ class PBXTargetDependency(PBXType):
 
 class PBXAggregateTarget(PBXType):
 	pass
-	
-	
+
+
 class PBXHeadersBuildPhase(PBXType):
 	pass
-	
-	
+
+
 class PBXBuildPhase(PBXType):
     def add_build_file(self, bf):
         if bf.get('isa') != 'PBXBuildFile':
@@ -736,14 +736,14 @@ class XcodeProject(PBXDict):
                 for buildPhase in t['buildPhases']:
                     if self.objects[buildPhase].get('isa') == 'PBXShellScriptBuildPhase' and self.objects[buildPhase].get('shellScript') == script:
                         skip = True
-                        
+
                 if not skip:
                     t['buildPhases'].add(script_phase.id)
                     self.objects[script_phase.id] = script_phase
                     result.append(script_phase)
-            
+
         return result
-    
+
     def add_run_script_all_targets(self, script=None):
         result = []
         targets = self.get_build_phases('PBXNativeTarget') + self.get_build_phases('PBXAggregateTarget')
@@ -754,14 +754,14 @@ class XcodeProject(PBXDict):
                 for buildPhase in t['buildPhases']:
                     if self.objects[buildPhase].get('isa') == 'PBXShellScriptBuildPhase' and self.objects[buildPhase].get('shellScript') == script:
                         skip = True
-                        
+
                 if not skip:
                     t['buildPhases'].add(script_phase.id)
                     self.objects[script_phase.id] = script_phase
                     result.append(script_phase)
-            
+
         return result
-    
+
     def add_folder(self, os_path, parent=None, excludes=None, recursive=True, create_build_files=True):
         if not os.path.isdir(os_path):
             return []
@@ -860,6 +860,8 @@ class XcodeProject(PBXDict):
             if not os.path.exists(f_path):
                 return results
             elif tree == 'SOURCE_ROOT':
+                f_path = os.path.relpath(f_path, self.source_root)
+            elif tree == "<group>":
                 f_path = os.path.relpath(f_path, self.source_root)
             else:
                 tree = '<absolute>'
@@ -1130,11 +1132,11 @@ class XcodeProject(PBXDict):
             self.saveFormatXML(file_name)
         else:
             self.saveFormat3_2(file_name)
-    
+
     def saveFormat3_2(self, file_name=None):
         """Alias for backward compatibility"""
         self.save_new_format(file_name)
-        
+
     def save_format_xml(self, file_name=None):
         """Saves in old (xml) format"""
         if not file_name:
@@ -1352,8 +1354,8 @@ class XcodeProject(PBXDict):
 
         tree = plistlib.readPlistFromString(stdout)
         return XcodeProject(tree, path)
-    
-    @classmethod    
+
+    @classmethod
     def LoadFromXML(cls, path):
     	tree = plistlib.readPlist(path)
         return XcodeProject(tree, path)
@@ -1397,3 +1399,14 @@ def _escapeAndEncode(text):
     text = text.replace("<", "&lt;")        # escape '<'
     text = text.replace(">", "&gt;")        # escape '>'
     return text.encode("ascii", "xmlcharrefreplace")  # encode as ascii with xml character references
+
+
+
+if __name__ == "__main__":
+  project = XcodeProject.Load("/Users/junwchina/Programs/CPP/TestPlugin/proj.ios_mac/TestPlugin.xcodeproj/project.pbxproj")
+  project.add_file("/Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj", "<group>")
+  project.add_file("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj", "<group>")
+
+  if project.modified:
+    project.save()
+

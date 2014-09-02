@@ -3,23 +3,23 @@
 
 import getopt
 import sys
+import os
 from mod_pbxproj import XcodeProject
 
 def help():
   print """    xcodemod.py options
 
     --help                   Show help information
+    --pbxproj                project's project.pbxproj
 
     --addsubp                add sub project to project.
     --addfile                add file to project
 
-    --pbxproj                project's project.pbxproj
-
     Params with addsubp
     --subpath                sub project path which should be the path of sub project's *.xcodeproj. Only be used with -addsubp
-    --header_paths           add header paths to project. Only be used with -addsubp
-    --sdk_dependencies       add sdk dependencies which are localed in iPhone's framework. Only be used with -addsubp
-    --dev_dependencies       add develop dependencies wich are localed in Mac's framework. Only be used with -addsubp
+    --header_paths           add header paths to project, seperate by ":". Only be used with -addsubp
+    --sdk_dependencies       add sdk dependencies which are localed in iPhone's framework, seperate by ":". Only be used with -addsubp
+    --dev_dependencies       add develop dependencies wich are localed in Mac's framework, seperate by ":". Only be used with -addsubp
 
     Params with addfile
     --filepath               file's localtion. Only be used with addfile
@@ -28,6 +28,8 @@ def help():
     --create_build_files=    create build files which defined in mod_pbxproj for each PBX* object
     --weak
     --ignore_unknown_type    ignore unknown type
+
+    i.e: python xcodemod.py --addsubp --subpath /Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj --header_paths /Users/junwchina/SDK/plugin-x/protocols/include  --pbxproj /Users/junwchina/Programs/CPP/TestPlugin/proj.ios_mac/TestPlugin.xcodeproj/project.pbxproj --sdk_dependencies SystemConfiguration.framework:StoreKit.framework:GameController.framework:CoreData.framework --dev_dependencies CoreTelephony.framework:AdSupport.framework:MessageUI.framework:MediaPlayer.framework
   """
 
 def check_and_get_params_for_add_file(opts_dict):
@@ -52,10 +54,6 @@ def check_and_get_params_for_add_file(opts_dict):
 
 
 
-#--subpath                sub project path which should be the path of sub project's *.xcodeproj. Only be used with -addsubp
-#--header_paths           add header paths to project, seperate by ":". Only be used with -addsubp
-#--sdk_dependencies       add sdk dependencies which are localed in iPhone's framework, seperate by ":". Only be used with -addsubp
-#--dev_dependencies       add develop dependencies wich are localed in Mac's framework, seperate by ":". Only be used with -addsubp
 def check_and_get_params_for_add_subp(opts_dict):
   try:
     args = []
@@ -95,10 +93,10 @@ def get_action_name(opts):
 if __name__ == "__main__":
   add_subprojects = ["addsubp", "subpath=", "header_paths=", "sdk_dependencies=", "dev_dependencies="]
   add_file = ["addfile", "filepath=", "parent=", "tree=", "create_build_files=", "weak=", "ignore_unknwon_type="]
-  commons = ["xcode"]
+  commons = ["pbxproj="]
 
   try:
-    opts, args = getopt.getopt(sys.argv[1:], [], add_subprojects + add_file)
+    opts, args = getopt.getopt(sys.argv[1:], [], add_subprojects + add_file + commons)
   except getopt.GetoptError as err:
     help()
     sys.exit(2)
@@ -110,6 +108,7 @@ if __name__ == "__main__":
     exit(0)
 
 
+
   opts_dict = dict((k.lstrip("--"),v) for k, v in opts)
   pbxproj = opts_dict.get("pbxproj")
 
@@ -117,17 +116,19 @@ if __name__ == "__main__":
     help()
     exit(1)
 
-
   if action == "add_file":
     args, opts, ret = check_and_get_params_for_add_file(opts_dict)
 
-  elif action == "add_subp":
+  elif action == "add_subproject_as_dependency":
     args, opts, ret = check_and_get_params_for_add_subp(opts_dict)
 
   else:
     help()
     exit(1)
 
-  project = XcodeProject.Create(pbxproj)
+  project = XcodeProject.Load(pbxproj)
   method = getattr(project, action)
-  method(args, opts)
+  method(*args, **opts)
+  if project.modified:
+    project.save()
+

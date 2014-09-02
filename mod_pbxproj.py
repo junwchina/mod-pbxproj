@@ -1420,11 +1420,9 @@ class XcodeProject(PBXDict):
         proxy_item = self.add_file(f_path, tree = "<group>")[0]
         item_proxy = PBXContainerItemProxy.Create(proxy_item, 2)
         self.objects[item_proxy.id] = item_proxy
-        print item_proxy
 
         proxy = PBXReferenceProxy.Create(item_proxy)
         self.objects[proxy.id] = proxy
-        print proxy
 
         group = PBXGroup.Create("Products")
         self.root_group.add_child(group)
@@ -1469,6 +1467,9 @@ class XcodeProject(PBXDict):
         # add other dependencies
         for dependency in dev_dependencies:
             self.add_file_if_doesnt_exist(dependency, tree = "DEVELOPER_DIR")
+
+
+        self.modified = True
 
 # The code below was adapted from plistlib.py.
 
@@ -1521,7 +1522,7 @@ if __name__ == "__main__":
                                                            "GameController.framework", "CoreData.framework"],
                                        dev_dependencies = ["CoreTelephony.framework", "AdSupport.framework",
                                                            "MessageUI.framework", "MediaPlayer.framework"])
-  project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj", "libPluginAdmob.a")
+  project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj")
 
   if project.modified:
     project.save()

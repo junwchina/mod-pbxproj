@@ -383,11 +383,11 @@ class PBXContainerItemProxy(PBXType):
 
 class PBXReferenceProxy(PBXType):
   @classmethod
-  def Create(cls, path, item_proxy, source_tree = "BUILT_PRODUCTS_DIR"):
+  def Create(cls, item_proxy, source_tree = "BUILT_PRODUCTS_DIR"):
     this = cls()
     this.id = cls.GenerateId()
     this["fileType"]= "archive.ar"
-    this["path"] = path
+    this["path"] = "lib" + item_proxy.get("remoteInfo") + ".a"
     this["remoteRef"] = item_proxy.id
     this["sourceTree"] = source_tree
 
@@ -1411,7 +1411,7 @@ class XcodeProject(PBXDict):
 
 
 
-    def add_subproject_as_dependency(self, f_path, lib_name, header_paths = [],  sdk_dependencies = [], dev_dependencies = []):
+    def add_subproject_as_dependency(self, f_path, header_paths = [],  sdk_dependencies = [], dev_dependencies = []):
         for obj in self.objects.values():
             if 'path' in obj:
                 if self.path_leaf(f_path) == self.path_leaf(obj.get('path')):
@@ -1422,7 +1422,7 @@ class XcodeProject(PBXDict):
         self.objects[item_proxy.id] = item_proxy
         print item_proxy
 
-        proxy = PBXReferenceProxy.Create(lib_name, item_proxy)
+        proxy = PBXReferenceProxy.Create(item_proxy)
         self.objects[proxy.id] = proxy
         print proxy
 
@@ -1516,7 +1516,6 @@ if __name__ == "__main__":
 
   # add library projects
   project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj",
-                                       "libPluginProtocol.a",
                                        header_paths = ["/Users/junwchina/SDK/plugin-x/protocols/include"],
                                        sdk_dependencies = ["SystemConfiguration.framework", "StoreKit.framework",
                                                            "GameController.framework", "CoreData.framework"],

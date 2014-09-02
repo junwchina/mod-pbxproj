@@ -9,7 +9,6 @@ Add method `add_subproject_as_dependency`. You can use this method to add a sub 
 
       # add library projects
       project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj",
-                                           "libPluginProtocol.a",
                                            header_paths = ["/Users/junwchina/SDK/plugin-x/protocols/include"],
                                            sdk_dependencies = ["SystemConfiguration.framework", "StoreKit.framework",
                                                                "GameController.framework", "CoreData.framework"],

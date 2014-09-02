@@ -7,7 +7,7 @@ import os
 from mod_pbxproj import XcodeProject
 
 def help():
-  print """    xcodemod.py options
+  print """    xcodemod options
 
     --help                   Show help information
     --pbxproj                project's project.pbxproj
@@ -29,7 +29,7 @@ def help():
     --weak
     --ignore_unknown_type    ignore unknown type
 
-    i.e: python xcodemod.py --addsubp --subpath /Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj --header_paths /Users/junwchina/SDK/plugin-x/protocols/include  --pbxproj /Users/junwchina/Programs/CPP/TestPlugin/proj.ios_mac/TestPlugin.xcodeproj/project.pbxproj --sdk_dependencies SystemConfiguration.framework:StoreKit.framework:GameController.framework:CoreData.framework --dev_dependencies CoreTelephony.framework:AdSupport.framework:MessageUI.framework:MediaPlayer.framework
+    i.e: xcodemod --addsubp --subpath /Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj --header_paths /Users/junwchina/SDK/plugin-x/protocols/include  --pbxproj /Users/junwchina/Programs/CPP/TestPlugin/proj.ios_mac/TestPlugin.xcodeproj/project.pbxproj --sdk_dependencies SystemConfiguration.framework:StoreKit.framework:GameController.framework:CoreData.framework --dev_dependencies CoreTelephony.framework:AdSupport.framework:MessageUI.framework:MediaPlayer.framework
   """
 
 def check_and_get_params_for_add_file(opts_dict):

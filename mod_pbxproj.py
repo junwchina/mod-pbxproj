@@ -893,13 +893,17 @@ class XcodeProject(PBXDict):
             abs_path = f_path
 
             if not os.path.exists(f_path):
-                return results
+              return results
             elif tree == 'SOURCE_ROOT':
                 f_path = os.path.relpath(f_path, self.source_root)
             elif tree == "<group>":
                 f_path = os.path.relpath(f_path, self.source_root)
             else:
                 tree = '<absolute>'
+        elif tree == "SDKROOT":
+            f_path = os.path.join("System/Library/Frameworks/", f_path)
+        elif tree == "DEVELOPER_DIR":
+            f_path = os.path.join("Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS7.1.sdk/System/Library/Frameworks/", f_path)
 
         if not parent:
             parent = self.root_group
@@ -1407,7 +1411,7 @@ class XcodeProject(PBXDict):
 
 
 
-    def add_subproject_as_dependency(self, f_path, lib_name, header_paths = [],  dependencies = []):
+    def add_subproject_as_dependency(self, f_path, lib_name, header_paths = [],  sdk_dependencies = [], dev_dependencies = []):
         for obj in self.objects.values():
             if 'path' in obj:
                 if self.path_leaf(f_path) == self.path_leaf(obj.get('path')):
@@ -1451,13 +1455,20 @@ class XcodeProject(PBXDict):
         # add dependencies to all targets
         phases = self.get_build_phases("PBXNativeTarget")
         for phase in phases:
-          phase.get("dependencies").add(target_depend.id)
+            phase.get("dependencies").add(target_depend.id)
 
         # add header path
         for path in header_paths:
-          header_path = os.path.join('$(SRCROOT)', project.get_relative_path(path))
-          project.add_header_search_paths(header_path, recursive=True)
+            header_path = os.path.join('$(SRCROOT)', self.get_relative_path(path))
+            self.add_header_search_paths(header_path, recursive=True)
 
+        # add other dependencies
+        for dependency in sdk_dependencies:
+            self.add_file_if_doesnt_exist(dependency, tree = "SDKROOT")
+
+        # add other dependencies
+        for dependency in dev_dependencies:
+            self.add_file_if_doesnt_exist(dependency, tree = "DEVELOPER_DIR")
 
 # The code below was adapted from plistlib.py.
 
@@ -1506,7 +1517,11 @@ if __name__ == "__main__":
   # add library projects
   project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj",
                                        "libPluginProtocol.a",
-                                       header_paths = ["/Users/junwchina/SDK/plugin-x/protocols/include"] )
+                                       header_paths = ["/Users/junwchina/SDK/plugin-x/protocols/include"],
+                                       sdk_dependencies = ["SystemConfiguration.framework", "StoreKit.framework",
+                                                           "GameController.framework", "CoreData.framework"],
+                                       dev_dependencies = ["CoreTelephony.framework", "AdSupport.framework",
+                                                           "MessageUI.framework", "MediaPlayer.framework"])
   project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj", "libPluginAdmob.a")
 
   if project.modified:

@@ -281,7 +281,7 @@ class PBXBuildFile(PBXType):
 
     @classmethod
     def Create(cls, file_ref, weak=False):
-        if isinstance(file_ref, PBXFileReference):
+        if file_ref.__class__.__name__ in ["PBXFileReference", "PBXBuildFile", "PBXReferenceProxy"]:
             file_ref = file_ref.id
 
         bf = cls()
@@ -295,13 +295,18 @@ class PBXBuildFile(PBXType):
 
 
 class PBXGroup(PBXType):
+    SUPPORT_CHILDREN = ["PBXFileReference", "PBXGroup", "PBXReferenceProxy"]
+
+    def is_support(self, ref):
+        return (ref.get("isa") in PBXGroup.SUPPORT_CHILDREN)
+
     def add_child(self, ref):
         if not isinstance(ref, PBXDict):
             return None
 
         isa = ref.get('isa')
 
-        if isa != 'PBXFileReference' and isa != 'PBXGroup':
+        if not self.is_support(ref):
             return None
 
         if 'children' not in self:
@@ -360,11 +365,33 @@ class PBXProject(PBXType):
 
 
 class PBXContainerItemProxy(PBXType):
-    pass
+
+  # proxy_type:
+  #     1 : for PBXReferenceProxy
+  #     2 : for PBXTargetDependency
+  @classmethod
+  def Create(cls, proxy_item, proxy_type):
+    this = cls()
+    this.id = cls.GenerateId()
+    this["containerPortal"] = proxy_item.id
+    this["proxyType"] = str(proxy_type)
+    this["remoteGlobalIDString"] = cls.GenerateId()
+    this["remoteInfo"] = os.path.splitext(proxy_item.get("name"))[0]
+
+    return this
 
 
 class PBXReferenceProxy(PBXType):
-    pass
+  @classmethod
+  def Create(cls, path, item_proxy, source_tree = "BUILT_PRODUCTS_DIR"):
+    this = cls()
+    this.id = cls.GenerateId()
+    this["fileType"]= "archive.ar"
+    this["path"] = path
+    this["remoteRef"] = item_proxy.id
+    this["sourceTree"] = source_tree
+
+    return this
 
 
 class PBXVariantGroup(PBXType):
@@ -372,7 +399,15 @@ class PBXVariantGroup(PBXType):
 
 
 class PBXTargetDependency(PBXType):
-    pass
+  @classmethod
+  def Create(cls, item_proxy):
+    this = cls()
+    this.id = cls.GenerateId()
+    this["name"] = item_proxy.get("remoteInfo")
+    this["targetProxy"] = item_proxy.id
+
+    return this
+
 
 
 class PBXAggregateTarget(PBXType):
@@ -1362,6 +1397,68 @@ class XcodeProject(PBXDict):
         return XcodeProject(tree, path)
 
 
+
+    def get_pbxproject(self):
+        for key, value in self.objects.iteritems():
+            if value.get('isa') == 'PBXProject':
+                return value
+
+        return None
+
+
+
+    def add_subproject_as_dependency(self, f_path, lib_name, header_paths = [],  dependencies = []):
+        for obj in self.objects.values():
+            if 'path' in obj:
+                if self.path_leaf(f_path) == self.path_leaf(obj.get('path')):
+                    return
+
+        proxy_item = self.add_file(f_path, tree = "<group>")[0]
+        item_proxy = PBXContainerItemProxy.Create(proxy_item, 2)
+        self.objects[item_proxy.id] = item_proxy
+        print item_proxy
+
+        proxy = PBXReferenceProxy.Create(lib_name, item_proxy)
+        self.objects[proxy.id] = proxy
+        print proxy
+
+        group = PBXGroup.Create("Products")
+        self.root_group.add_child(group)
+        self.objects[group.id] = group
+        group.add_child(proxy)
+
+        pbxproject = self.get_pbxproject()
+        projectReferences = pbxproject.get("projectReferences")
+
+        projectReference = PBXDict()
+        projectReference["ProjectRef"] = proxy_item.id
+        projectReference["ProductGroup"] = group.id
+        projectReferences.add(projectReference)
+
+        build_file = PBXBuildFile.Create(proxy)
+        self.objects[build_file.id] = build_file
+
+        phase = self.get_build_phases("PBXFrameworksBuildPhase")[0]
+        phase.add_build_file(build_file)
+
+        # add dependencies
+        dependency = PBXContainerItemProxy.Create(proxy_item, 1)
+        self.objects[dependency.id] = dependency
+
+        target_depend = PBXTargetDependency.Create(dependency)
+        self.objects[target_depend.id] = target_depend
+
+        # add dependencies to all targets
+        phases = self.get_build_phases("PBXNativeTarget")
+        for phase in phases:
+          phase.get("dependencies").add(target_depend.id)
+
+        # add header path
+        for path in header_paths:
+          header_path = os.path.join('$(SRCROOT)', project.get_relative_path(path))
+          project.add_header_search_paths(header_path, recursive=True)
+
+
 # The code below was adapted from plistlib.py.
 
 class PBXWriter(plistlib.PlistWriter):
@@ -1405,8 +1502,12 @@ def _escapeAndEncode(text):
 
 if __name__ == "__main__":
   project = XcodeProject.Load("/Users/junwchina/Programs/CPP/TestPlugin/proj.ios_mac/TestPlugin.xcodeproj/project.pbxproj")
-  project.add_file("/Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj", "<group>")
-  project.add_file("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj", "<group>")
+
+  # add library projects
+  project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj",
+                                       "libPluginProtocol.a",
+                                       header_paths = ["/Users/junwchina/SDK/plugin-x/protocols/include"] )
+  project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj", "libPluginAdmob.a")
 
   if project.modified:
     project.save()

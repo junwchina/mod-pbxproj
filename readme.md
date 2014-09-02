@@ -2,7 +2,7 @@ This module can read, modify, and write a .pbxproj file from an Xcode 4 project.
 
 **Changes**: What i changed on this library? 
 
-Add method `add_subproject_as_dependency`. You can use this method to add a sub project as dependency. i.e:
+1. Add method `add_subproject_as_dependency`. You can use this method to add a sub project as dependency. i.e:
     
     if __name__ == "__main__":
       project = XcodeProject.Load("/Users/junwchina/Programs/CPP/TestPlugin/proj.ios_mac/TestPlugin.xcodeproj/project.pbxproj")
@@ -14,10 +14,16 @@ Add method `add_subproject_as_dependency`. You can use this method to add a sub 
                                                                "GameController.framework", "CoreData.framework"],
                                            dev_dependencies = ["CoreTelephony.framework", "AdSupport.framework",
                                                                "MessageUI.framework", "MediaPlayer.framework"])
-      project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj", "libPluginAdmob.a")
+      project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj")
 
       if project.modified:
         project.save()
+
+
+
+2. Add a script which can be used to execute mod_pbxproj.py on command line
+
+    xcodemod --addsubp --subpath /Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj --header_paths /Users/junwchina/SDK/plugin-x/protocols/include  --pbxproj /Users/junwchina/Programs/CPP/TestPlugin/proj.ios_mac/TestPlugin.xcodeproj/project.pbxproj --sdk_dependencies SystemConfiguration.framework:StoreKit.framework:GameController.framework:CoreData.framework --dev_dependencies CoreTelephony.framework:AdSupport.framework:MessageUI.framework:MediaPlayer.framework
 
 
     

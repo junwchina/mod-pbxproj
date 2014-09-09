@@ -41,6 +41,7 @@ import re
 import shutil
 import subprocess
 import uuid
+import glob
 
 from UserDict import IterableUserDict
 from UserList import UserList
@@ -885,6 +886,18 @@ class XcodeProject(PBXDict):
 
         return self.add_file(f_path, parent, tree, create_build_files, weak, ignore_unknown_type=ignore_unknown_type)
 
+    def find_lib_path(self, lib_name):
+      paths = glob.glob("/Applications/Xcode.app/Contents/Developer/**/**/**/**/**/**/**/**/" + lib_name)
+      if len(paths) > 0:
+        return paths[1]
+      else:
+        paths = glob.glob("/Applications/Xcode.app/Contents/Developer/**/**/**/**/**/**/**/" + lib_name)
+        if len(paths) > 0:
+          return paths[1]
+
+        print(lib_name + " : can not be found!")
+        return ""
+
     def add_file(self, f_path, parent=None, tree='SOURCE_ROOT', create_build_files=True, weak=False, ignore_unknown_type=False):
         results = []
         abs_path = ''
@@ -900,10 +913,13 @@ class XcodeProject(PBXDict):
                 f_path = os.path.relpath(f_path, self.source_root)
             else:
                 tree = '<absolute>'
-        elif tree == "SDKROOT":
-            f_path = os.path.join("System/Library/Frameworks/", f_path)
         elif tree == "DEVELOPER_DIR":
-            f_path = os.path.join("Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS7.1.sdk/System/Library/Frameworks/", f_path)
+            real_path = self.find_lib_path(f_path)
+            if not real_path:
+                return results
+
+            f_path = self.find_lib_path(f_path)
+
 
         if not parent:
             parent = self.root_group
@@ -1411,7 +1427,7 @@ class XcodeProject(PBXDict):
 
 
 
-    def add_subproject_as_dependency(self, f_path, header_paths = [],  sdk_dependencies = [], dev_dependencies = []):
+    def add_subproject_as_dependency(self, f_path, header_paths = [],  frameworks = [], libs = []):
         for obj in self.objects.values():
             if 'path' in obj:
                 if self.path_leaf(f_path) == self.path_leaf(obj.get('path')):
@@ -1460,12 +1476,12 @@ class XcodeProject(PBXDict):
             header_path = os.path.join('$(SRCROOT)', self.get_relative_path(path))
             self.add_header_search_paths(header_path, recursive=True)
 
-        # add other dependencies
-        for dependency in sdk_dependencies:
-            self.add_file_if_doesnt_exist(dependency, tree = "SDKROOT")
+        # add frameworks
+        for dependency in frameworks:
+            self.add_file_if_doesnt_exist(dependency, tree = "DEVELOPER_DIR")
 
-        # add other dependencies
-        for dependency in dev_dependencies:
+        # add libs
+        for dependency in libs:
             self.add_file_if_doesnt_exist(dependency, tree = "DEVELOPER_DIR")
 
 
@@ -1513,15 +1529,11 @@ def _escapeAndEncode(text):
 
 
 if __name__ == "__main__":
-  project = XcodeProject.Load("/Users/junwchina/Programs/CPP/TestPlugin/proj.ios_mac/TestPlugin.xcodeproj/project.pbxproj")
+  project = XcodeProject.Load("/Users/junwchina/Programs/CPP/MyPlugin/proj.ios_mac/MyPlugin.xcodeproj/project.pbxproj")
 
   # add library projects
   project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj",
-                                       header_paths = ["/Users/junwchina/SDK/plugin-x/protocols/include"],
-                                       sdk_dependencies = ["SystemConfiguration.framework", "StoreKit.framework",
-                                                           "GameController.framework", "CoreData.framework"],
-                                       dev_dependencies = ["CoreTelephony.framework", "AdSupport.framework",
-                                                           "MessageUI.framework", "MediaPlayer.framework"])
+                                       header_paths = ["/Users/junwchina/SDK/plugin-x/protocols/include"], frameworks = ["SystemConfiguration.framework", "StoreKit.framework", "GameController.framework", "CoreData.framework", "CoreTelephony.framework", "AdSupport.framework", "MessageUI.framework", "MediaPlayer.framework"], libs = ["libz.dylib", "libsqlite3.0.dylib"])
   project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj")
 
   if project.modified:

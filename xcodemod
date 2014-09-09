@@ -18,8 +18,8 @@ def help():
     Params with addsubp
     --subpath                sub project path which should be the path of sub project's *.xcodeproj. Only be used with -addsubp
     --header_paths           add header paths to project, seperate by ":". Only be used with -addsubp
-    --sdk_dependencies       add sdk dependencies which are localed in iPhone's framework, seperate by ":". Only be used with -addsubp
-    --dev_dependencies       add develop dependencies wich are localed in Mac's framework, seperate by ":". Only be used with -addsubp
+    --frameworks             add sdk dependencies which are localed in iPhone's framework, seperate by ":". Only be used with -addsubp
+    --libs                   add develop dependencies wich are localed in Mac's framework, seperate by ":". Only be used with -addsubp
 
     Params with addfile
     --filepath               file's localtion. Only be used with addfile
@@ -29,7 +29,7 @@ def help():
     --weak
     --ignore_unknown_type    ignore unknown type
 
-    i.e: xcodemod --addsubp --subpath /Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj --header_paths /Users/junwchina/SDK/plugin-x/protocols/include  --pbxproj /Users/junwchina/Programs/CPP/TestPlugin/proj.ios_mac/TestPlugin.xcodeproj/project.pbxproj --sdk_dependencies SystemConfiguration.framework:StoreKit.framework:GameController.framework:CoreData.framework --dev_dependencies CoreTelephony.framework:AdSupport.framework:MessageUI.framework:MediaPlayer.framework
+    i.e: xcodemod --addsubp --subpath /Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj --header_paths /Users/junwchina/SDK/plugin-x/protocols/include  --pbxproj /Users/junwchina/Programs/CPP/TestPlugin/proj.ios_mac/TestPlugin.xcodeproj/project.pbxproj --frameworks SystemConfiguration.framework:StoreKit.framework:GameController.framework:CoreData.framework --dev_dependencies CoreTelephony.framework:AdSupport.framework:MessageUI.framework:MediaPlayer.framework
   """
 
 def check_and_get_params_for_add_file(opts_dict):
@@ -91,7 +91,7 @@ def get_action_name(opts):
 
 
 if __name__ == "__main__":
-  add_subprojects = ["addsubp", "subpath=", "header_paths=", "sdk_dependencies=", "dev_dependencies="]
+  add_subprojects = ["addsubp", "subpath=", "header_paths=", "frameworks=", "libs="]
   add_file = ["addfile", "filepath=", "parent=", "tree=", "create_build_files=", "weak=", "ignore_unknwon_type="]
   commons = ["pbxproj="]
 

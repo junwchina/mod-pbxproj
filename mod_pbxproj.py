@@ -337,6 +337,7 @@ class PBXGroup(PBXType):
 
         return id in self['children']
 
+
     def get_name(self):
         path_name = os.path.split(self.get('path', ''))[1]
         return self.get('name', path_name)
@@ -921,11 +922,11 @@ class XcodeProject(PBXDict):
             f_path = self.find_lib_path(f_path)
 
 
+        if not isinstance(parent, PBXGroup):
+            parent = self.objects.get(parent, self.root_group)
+
         if not parent:
             parent = self.root_group
-        elif not isinstance(parent, PBXGroup):
-            # assume it's an id
-            parent = self.objects.get(parent, self.root_group)
 
         file_ref = PBXFileReference.Create(f_path, tree, ignore_unknown_type=ignore_unknown_type)
         parent.add_child(file_ref)
@@ -1425,15 +1426,42 @@ class XcodeProject(PBXDict):
 
         return None
 
+    def has_group(self, name, path = None, tree = 'SOURCE_ROOT'):
+        for key, value in self.objects.iteritems():
+            if value.get('isa') == 'PBXProject' and value.get("name") == name and value.get("path") == path and value.get("tree") == tree:
+                return value
+
+        return False
+
+    #def Create(cls, name, path=None, tree='SOURCE_ROOT'):
+    def add_group(self, name, path = None, tree = 'SOURCE_ROOT', parent = None):
+      group = self.has_group(name, path, tree)
+
+      if group:
+          return group
+
+      group = PBXGroup.Create(name, path, tree)
+      self.objects[group.id] = group
+
+      if not isinstance(parent, PBXGroup):
+          parent = self.objects.get(parent, self.root_group)
+
+      if not parent:
+          parent = self.root_group
+
+      parent.add_child(group)
+
+      self.modified = True
+      return group
 
 
-    def add_subproject_as_dependency(self, f_path, header_paths = [],  frameworks = [], libs = []):
+    def add_subproject_as_dependency(self, f_path, header_paths = [],  frameworks = [], libs = [], parent = None):
         for obj in self.objects.values():
             if 'path' in obj:
                 if self.path_leaf(f_path) == self.path_leaf(obj.get('path')):
                     return
 
-        proxy_item = self.add_file(f_path, tree = "<group>")[0]
+        proxy_item = self.add_file(f_path, tree = "<group>", parent = parent)[0]
         item_proxy = PBXContainerItemProxy.Create(proxy_item, 2)
         self.objects[item_proxy.id] = item_proxy
 
@@ -1532,9 +1560,12 @@ if __name__ == "__main__":
   project = XcodeProject.Load("/Users/junwchina/Programs/CPP/MyPlugin/proj.ios_mac/MyPlugin.xcodeproj/project.pbxproj")
 
   # add library projects
+
+  #parent = project.add_group("Plugins")
+
   project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj",
-                                       header_paths = ["/Users/junwchina/SDK/plugin-x/protocols/include"], frameworks = ["SystemConfiguration.framework", "StoreKit.framework", "GameController.framework", "CoreData.framework", "CoreTelephony.framework", "AdSupport.framework", "MessageUI.framework", "MediaPlayer.framework"], libs = ["libz.dylib", "libsqlite3.0.dylib"])
-  project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj")
+                                       header_paths = ["/Users/junwchina/SDK/plugin-x/protocols/include"], frameworks = ["SystemConfiguration.framework", "StoreKit.framework", "GameController.framework", "CoreData.framework", "CoreTelephony.framework", "AdSupport.framework", "MessageUI.framework", "MediaPlayer.framework"], libs = ["libz.dylib", "libsqlite3.0.dylib"])#, parent = parent)
+  project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj")#, parent = parent)
 
   if project.modified:
     project.save()

@@ -1426,15 +1426,17 @@ class XcodeProject(PBXDict):
 
         return None
 
-    def has_group(self, name, path = None, tree = 'SOURCE_ROOT'):
+    def has_group(self, name, path = None, tree = None):
         for key, value in self.objects.iteritems():
-            if value.get('isa') == 'PBXProject' and value.get("name") == name and value.get("path") == path and value.get("tree") == tree:
-                return value
+            if value.get("isa") == "PBXGroup":
+              if str(value.get("name")) == name and value.get("path") == path and value.get("tree") == tree:
+                  return value
 
         return False
 
-    #def Create(cls, name, path=None, tree='SOURCE_ROOT'):
-    def add_group(self, name, path = None, tree = 'SOURCE_ROOT', parent = None):
+
+    # just return this PBXGroup when it's existed
+    def add_group(self, name, path = None, tree = None, parent = None):
       group = self.has_group(name, path, tree)
 
       if group:
@@ -1468,9 +1470,7 @@ class XcodeProject(PBXDict):
         proxy = PBXReferenceProxy.Create(item_proxy)
         self.objects[proxy.id] = proxy
 
-        group = PBXGroup.Create("Products")
-        self.root_group.add_child(group)
-        self.objects[group.id] = group
+        group = self.add_group("Products")
         group.add_child(proxy)
 
         pbxproject = self.get_pbxproject()
@@ -1504,13 +1504,14 @@ class XcodeProject(PBXDict):
             header_path = os.path.join('$(SRCROOT)', self.get_relative_path(path))
             self.add_header_search_paths(header_path, recursive=True)
 
+        group = self.add_group("Frameworks")
         # add frameworks
         for dependency in frameworks:
-            self.add_file_if_doesnt_exist(dependency, tree = "DEVELOPER_DIR")
+            self.add_file_if_doesnt_exist(dependency, tree = "DEVELOPER_DIR", parent = group)
 
         # add libs
         for dependency in libs:
-            self.add_file_if_doesnt_exist(dependency, tree = "DEVELOPER_DIR")
+            self.add_file_if_doesnt_exist(dependency, tree = "DEVELOPER_DIR", parent = group)
 
 
         self.modified = True
@@ -1561,12 +1562,12 @@ if __name__ == "__main__":
 
   # add library projects
 
-  #parent = project.add_group("Plugins")
-
+  parent = project.add_group("Plugins")
   project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj",
-                                       header_paths = ["/Users/junwchina/SDK/plugin-x/protocols/include"], frameworks = ["SystemConfiguration.framework", "StoreKit.framework", "GameController.framework", "CoreData.framework", "CoreTelephony.framework", "AdSupport.framework", "MessageUI.framework", "MediaPlayer.framework"], libs = ["libz.dylib", "libsqlite3.0.dylib"])#, parent = parent)
-  project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj")#, parent = parent)
+                                       header_paths = ["/Users/junwchina/SDK/plugin-x/protocols/include"], frameworks = ["SystemConfiguration.framework", "StoreKit.framework", "GameController.framework", "CoreData.framework", "CoreTelephony.framework", "AdSupport.framework", "MessageUI.framework", "MediaPlayer.framework"], libs = ["libz.dylib", "libsqlite3.0.dylib"], parent = parent)
+  project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj", parent = parent)
 
+  project.add_other_ldflags("-ObjC")
   if project.modified:
     project.save()
 

@@ -1484,8 +1484,8 @@ class XcodeProject(PBXDict):
         build_file = PBXBuildFile.Create(proxy)
         self.objects[build_file.id] = build_file
 
-        phase = self.get_build_phases("PBXFrameworksBuildPhase")[0]
-        phase.add_build_file(build_file)
+        for phase in self.get_build_phases("PBXFrameworksBuildPhase"):
+          phase.add_build_file(build_file)
 
         # add dependencies
         dependency = PBXContainerItemProxy.Create(proxy_item, 1)
@@ -1558,14 +1558,14 @@ def _escapeAndEncode(text):
 
 
 if __name__ == "__main__":
-  project = XcodeProject.Load("/Users/junwchina/Programs/CPP/MyPlugin/proj.ios_mac/MyPlugin.xcodeproj/project.pbxproj")
+  project = XcodeProject.Load("/Users/junwchina/Programs/Lua/PluginxLua/frameworks/runtime-src/proj.ios_mac/PluginxLua.xcodeproj/project.pbxproj")
 
   # add library projects
 
   parent = project.add_group("Plugins")
-  project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/protocols/proj.ios/PluginProtocol.xcodeproj",
-                                       header_paths = ["/Users/junwchina/SDK/plugin-x/protocols/include"], frameworks = ["SystemConfiguration.framework", "StoreKit.framework", "GameController.framework", "CoreData.framework", "CoreTelephony.framework", "AdSupport.framework", "MessageUI.framework", "MediaPlayer.framework"], libs = ["libz.dylib", "libsqlite3.0.dylib"], parent = parent)
-  project.add_subproject_as_dependency("/Users/junwchina/SDK/plugin-x/plugins/admob/proj.ios/PluginAdmob.xcodeproj", parent = parent)
+  project.add_subproject_as_dependency("/Users/junwchina/Programs/Lua/PluginxLua/frameworks/runtime-src/plugin/protocols/proj.ios/PluginProtocol.xcodeproj",
+                                       header_paths = ["/Users/junwchina/Programs/Lua/PluginxLua/frameworks/runtime-src/plugin/protocols/include"], frameworks = ["SystemConfiguration.framework", "StoreKit.framework", "GameController.framework", "CoreData.framework", "CoreTelephony.framework", "AdSupport.framework", "MessageUI.framework", "MediaPlayer.framework"], libs = ["libz.dylib", "libsqlite3.0.dylib"], parent = parent)
+  project.add_subproject_as_dependency("/Users/junwchina/Programs/Lua/PluginxLua/frameworks/runtime-src/plugin/plugins/admob/proj.ios/PluginAdmob.xcodeproj", parent = parent)
 
   project.add_other_ldflags("-ObjC")
   if project.modified:

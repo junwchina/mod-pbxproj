@@ -1470,7 +1470,8 @@ class XcodeProject(PBXDict):
         proxy = PBXReferenceProxy.Create(item_proxy)
         self.objects[proxy.id] = proxy
 
-        group = self.add_group("Products")
+        group = PBXGroup.Create("Products")
+        self.objects[group.id] = group
         group.add_child(proxy)
 
         pbxproject = self.get_pbxproject()
@@ -1568,6 +1569,6 @@ if __name__ == "__main__":
   project.add_subproject_as_dependency("/Users/junwchina/Programs/Lua/PluginxLua/frameworks/runtime-src/plugin/plugins/admob/proj.ios/PluginAdmob.xcodeproj", parent = parent)
 
   project.add_other_ldflags("-ObjC")
-  if project.modified:
-    project.save()
+  #if project.modified:
+  project.save()
 
